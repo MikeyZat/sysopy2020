@@ -86,6 +86,10 @@ void calculate_diff(files_sequence *files)
         strcat(tmp, tmp_file_name); // diff file1.txt file2.txt >> file1.txt:file2.txt
         // execute command
         system(tmp);
+        // remove tmp variables
+        free(tmp_file_name);
+        free(rm_command);
+        free(touch_command);
     }
 }
 
@@ -144,8 +148,11 @@ int create_operations_blocks(char *file_name, blocks_array *tab_of_blocks)
         {
             strcat(operations[operations_size - 1], curr_line); // append to latest operation block
         }
+        free(tmp[j]);
+        tmp[j] = NULL;
         j++; // read next line from file
     }
+    free(tmp);
     result_block->size = result_block->tab_size = operations_size;
 
     tab_of_blocks->blocks[index_to_insert] = result_block;
