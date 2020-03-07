@@ -16,8 +16,5 @@ int main(int argc, char *args[])
         }
     }
 
-    calculate_diff(files);
-    int index = create_operations_blocks("a.txt:b.txt", main_tab);
-    printf("%d", index);
     return 0;
 }
