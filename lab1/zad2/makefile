@@ -37,6 +37,7 @@ tests:
 	make big
 	make simillar
 	make different
+	make addAndRemove
 
 small:
 	./program create_table 1 compare_pairs small.txt:small1.txt create_blocks small.txt:small1.txt remove_block 0
@@ -52,3 +53,15 @@ simillar:
 
 different:
 	./program create_table 1 compare_pairs c.txt:not_c.txt create_blocks c.txt:not_c.txt remove_block 0
+
+addAndRemove:
+	./program create_table 5 compare_pairs big.txt:big1.txt create_blocks big.txt:big1.txt remove_block 0 \
+	compare_pairs big.txt:big1.txt create_blocks c.txt:not_c.txt remove_block 0 \
+	compare_pairs medium.txt:medium1.txt create_blocks c.txt:not_c.txt \
+	compare_pairs e.txt:almost_e.txt \
+	compare_pairs c.txt:not_c.txt \
+	create_blocks e.txt:almost_e.txt \
+	create_blocks c.txt:not_c.txt \
+	remove_block 0 \
+	remove_block 2 \
+	remove_block 1 \

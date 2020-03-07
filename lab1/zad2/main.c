@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <sys/times.h>
+#include <unistd.h>
 
 blocks_array *exec_create_table(char *size_as_string)
 {
@@ -40,13 +43,38 @@ void exec_remove_operation(
     delete_operation_block(op_index, curr_block);
 }
 
+double calculate_time(clock_t start, clock_t end)
+{
+    return (double)(end - start) / (double)sysconf(_SC_CLK_TCK);
+}
+
 int main(int args_num, char *args[])
 {
     blocks_array *main_tab;
     int i = 1;
+    // TIMERS
+    // whole program
+    struct tms **program_time = calloc(2, sizeof(struct tms *));
+    clock_t real_time_program[2];
+    for (int j = 0; j < 2; j++)
+    {
+        program_time[j] = (struct tms *)calloc(1, sizeof(struct tms *));
+    }
+    real_time_program[0] = times(program_time[0]);
+    // commands
+    struct tms **tms_time = calloc(2, sizeof(struct tms *));
+    clock_t real_time[2];
+    for (int j = 0; j < 2; j++)
+    {
+        tms_time[j] = (struct tms *)calloc(1, sizeof(struct tms *));
+    }
+
     while (i < args_num)
     {
         char *command = args[i];
+
+        // START TIME
+        real_time[0] = times(tms_time[0]);
 
         if (strcmp(command, "create_table") == 0)
         {
@@ -77,7 +105,15 @@ int main(int args_num, char *args[])
         {
             i++;
         }
+        real_time[1] = times(tms_time[1]);
+        printf("[REAL_TIME] Executing action %s took %fs\n", command, calculate_time(real_time[0], real_time[1]));
+        printf("[USER_TIME] Executing action %s took %fs\n", command, calculate_time(tms_time[0]->tms_utime, tms_time[1]->tms_utime));
+        printf("[SYSTEM_TIME] Executing action %s took %fs\n", command, calculate_time(tms_time[0]->tms_stime, tms_time[1]->tms_stime));
     }
+    real_time_program[1] = times(program_time[1]);
+    printf("[REAL_TIME] Executing main.c took %fs\n", calculate_time(real_time_program[0], real_time[1]));
+    printf("[USER_TIME] Executing main.c took %fs\n", calculate_time(program_time[0]->tms_utime, program_time[1]->tms_utime));
+    printf("[SYSTEM_TIME] Executing main.c took %fs\n", calculate_time(program_time[0]->tms_stime, program_time[1]->tms_stime));
 
     return 0;
 }
