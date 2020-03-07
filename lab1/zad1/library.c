@@ -86,6 +86,10 @@ void calculate_diff(files_sequence *files)
         strcat(tmp, tmp_file_name); // diff file1.txt file2.txt >> file1.txt:file2.txt
         // execute command
         system(tmp);
+        // remove tmp variables
+        free(tmp_file_name);
+        free(rm_command);
+        free(touch_command);
     }
 }
 
@@ -105,7 +109,7 @@ int create_operations_blocks(char *file_name, blocks_array *tab_of_blocks)
     }
 
     int i = 0; // this is num of rows in our file
-    int operations_size = -1;
+    int operations_size = 0;
     char *line = NULL;                                            // this is our 'reader'
     size_t _ = 0;                                                 // this is not used
     char **tmp = (char **)calloc(MAX_ROW_LENGTH, sizeof(char *)); // file text
@@ -144,10 +148,13 @@ int create_operations_blocks(char *file_name, blocks_array *tab_of_blocks)
         {
             strcat(operations[operations_size - 1], curr_line); // append to latest operation block
         }
+        free(tmp[j]);
+        tmp[j] = NULL;
         j++; // read next line from file
     }
+    free(tmp);
     result_block->size = result_block->tab_size = operations_size;
-
+    result_block->operations = operations; // apply results to the main tab
     tab_of_blocks->blocks[index_to_insert] = result_block;
     tab_of_blocks->size++;
     if (index_to_insert == tab_of_blocks->tab_size)
@@ -160,7 +167,7 @@ int create_operations_blocks(char *file_name, blocks_array *tab_of_blocks)
 
 int get_operation_number(blocks_array *blocks_tab, int file_block_index)
 {
-    if (blocks_tab->size <= file_block_index || blocks_tab->blocks[file_block_index] == NULL)
+    if (blocks_tab->tab_size <= file_block_index || blocks_tab->blocks[file_block_index] == NULL)
     {
         printf("Can not get operations block number because the files block\
         with index %d doesn't exist",
@@ -172,7 +179,7 @@ int get_operation_number(blocks_array *blocks_tab, int file_block_index)
 
 void delete_file_block(int block_index, blocks_array *blocks_tab)
 {
-    if (block_index >= blocks_tab->size)
+    if (block_index >= blocks_tab->tab_size || blocks_tab->blocks[block_index] == NULL)
     {
         printf("Can not delete file block at index %d because\
         it doesn't exist",
