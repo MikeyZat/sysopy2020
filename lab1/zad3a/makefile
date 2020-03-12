@@ -19,16 +19,19 @@ clean:
 cleanAll:
 	rm -f *.o *.a *.so
 
-zad2_static:
-	make cleanAll
+zad3_static:
 	make static
 	$(CC) -o program main.c library.a -I .
 	make tests
 
-zad2_shared:
-	make cleanAll
+zad3_shared:
 	make shared
 	$(CC) -o program main.c -L. library.o -I .
+	make tests
+
+zad3_dynamic:
+	make shared
+	$(CC) -o program main_d.c -ldl -I .
 	make tests
 
 tests:

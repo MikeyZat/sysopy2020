@@ -19,16 +19,62 @@ clean:
 cleanAll:
 	rm -f *.o *.a *.so
 
-zad2_static:
-	make cleanAll
+zad3_static_opt0:
 	make static
-	$(CC) -o program main.c library.a -I .
+	$(CC) -O -o program main.c library.a -I .
 	make tests
 
-zad2_shared:
-	make cleanAll
+zad3_shared_opt0:
 	make shared
-	$(CC) -o program main.c -L. library.o -I .
+	$(CC) -O -o program main.c -L. library.o -I .
+	make tests
+
+zad3_dynamic_opt0:
+	make shared
+	$(CC) -O -o program main_d.c -ldl -I .
+	make tests
+
+zad3_static_opt2:
+	make static
+	$(CC) -O2 -o program main.c library.a -I .
+	make tests
+
+zad3_shared_opt2:
+	make shared
+	$(CC) -O2 -o program main.c -L. library.o -I .
+	make tests
+
+zad3_dynamic_opt2:
+	make shared
+	$(CC) -O2 -o program main_d.c -ldl -I .
+
+zad3_static_opt3:
+	make static
+	$(CC) -O3 -o program main.c library.a -I .
+	make tests
+
+zad3_shared_opt3:
+	make shared
+	$(CC) -O3 -o program main.c -L. library.o -I .
+	make tests
+
+zad3_dynamic_opt3:
+	make shared
+	$(CC) -O3 -o program main_d.c -ldl -I .
+
+zad3_static_opt0s:
+	make static
+	$(CC) -Os -o program main.c library.a -I .
+	make tests
+
+zad3_shared_opt0s:
+	make shared
+	$(CC) -Os -o program main.c -L. library.o -I .
+	make tests
+
+zad3_dynamic_opt0s:
+	make shared
+	$(CC) -Os -o program main_d.c -ldl -I .
 	make tests
 
 tests:
