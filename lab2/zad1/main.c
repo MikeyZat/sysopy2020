@@ -15,7 +15,7 @@ void generate_files(char *file_name, char *records_str, char *bytes_str)
   int records = (int)strtol(records_str, NULL, 10);
   int bytes = (int)strtol(bytes_str, NULL, 10);
   char *buffer = calloc(strlen(file_name) + 100, sizeof(char));
-  sprintf(buffer, "head -c %d /dev/random > %s", records * bytes,
+  sprintf(buffer, "head -c %d /dev/urandom > %s", records * bytes,
           file_name);
   system(buffer);
   free(buffer);
