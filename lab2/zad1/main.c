@@ -144,6 +144,84 @@ void quicksort_lib(FILE *file, int bytes, int low, int high)
   }
 }
 
+void swap_sys(int file, int bytes, int i, int j)
+{
+  char *first_record = calloc(bytes, sizeof(char));
+  char *second_record = calloc(bytes, sizeof(char));
+
+  lseek(file, i * bytes, SEEK_SET);
+  read(file, first_record, bytes);
+  lseek(file, j * bytes, SEEK_SET);
+  read(file, second_record, bytes);
+
+  lseek(file, i * bytes, SEEK_SET);
+  write(file, second_record, bytes);
+  lseek(file, j * bytes, SEEK_SET);
+  write(file, first_record, bytes);
+
+  free(first_record);
+  free(second_record);
+}
+
+int partition_sys(int file, int bytes, int low, int high)
+{
+  int pivot = high;
+  char *pivot_str = NULL;
+
+  int i = (low - 1);
+
+  for (int j = low; j <= high - 1; j++)
+  {
+    if (pivot_str == NULL)
+    {
+      pivot_str = calloc(bytes, sizeof(char));
+      lseek(file, pivot * bytes, SEEK_SET);
+      read(file, pivot_str, bytes);
+    }
+
+    char *current = calloc(bytes, sizeof(char));
+    lseek(file, j * bytes, SEEK_SET);
+    read(file, current, bytes);
+
+    if (strcmp(current, pivot_str) < 0)
+    {
+      free(pivot_str);
+      pivot_str = NULL;
+
+      free(current);
+      current = NULL;
+
+      i++;
+      swap_sys(file, bytes, i, j);
+    }
+
+    if (pivot_str != NULL)
+    {
+      free(pivot_str);
+      pivot_str = NULL;
+    }
+
+    if (current != NULL)
+    {
+      free(current);
+      current = NULL;
+    }
+  }
+  swap_sys(file, bytes, i + 1, high);
+  return i + 1;
+}
+
+void quicksort_sys(int file, int bytes, int low, int high)
+{
+  if (low < high)
+  {
+    int pivot = partition_sys(file, bytes, low, high);
+
+    quicksort_sys(file, bytes, low, pivot - 1);
+    quicksort_sys(file, bytes, pivot + 1, high);
+  }
+}
+
 void sort_files(char *file_name, char *records_str, char *bytes_str, char *option)
 {
   int records = (int)strtol(records_str, NULL, 10);
