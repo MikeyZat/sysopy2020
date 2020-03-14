@@ -63,7 +63,6 @@ void exec_copy(char *file_1, char *file_2, char *records_str, char *bytes_str, c
   {
     printf("Wrong argument type. Expected type: sys | lib");
   }
-  free(buffer);
 }
 
 void swap_lib(FILE *file, int bytes, int i, int j)
@@ -257,10 +256,10 @@ int main(int args_num, char *args[])
   srand((unsigned int)time(NULL));
 
   // TIMERS
-  struct tms **tms_time = calloc(2, sizeof(struct tms *));
+  struct tms **tms_time = malloc(2 * sizeof(struct tms *));
   for (int j = 0; j < 2; j++)
   {
-    tms_time[j] = (struct tms *)calloc(1, sizeof(struct tms *));
+    tms_time[j] = (struct tms *)malloc(sizeof(struct tms *));
   }
 
   int i = 1;
@@ -284,7 +283,7 @@ int main(int args_num, char *args[])
     }
     else if (strcmp(command, "sort") == 0)
     {
-      sort_files(args[i + 1], args[i + 2], args[i + 3], args[i + 3]);
+      sort_files(args[i + 1], args[i + 2], args[i + 3], args[i + 4]);
       i += 5;
     }
     else
