@@ -10,36 +10,15 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-char *generate_random_string(int max_size)
-{
-  if (max_size < 1)
-  {
-    return NULL;
-  }
-  char *base = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  size_t dict_len = strlen(base);
-  char *res = calloc(max_size, sizeof(char));
-
-  for (int i = 0; i < max_size; i++)
-  {
-    res[i] = base[rand() % dict_len];
-  }
-  // res[max_size - 1] = '\n';
-
-  return res;
-}
-
 void generate_files(char *file_name, char *records_str, char *bytes_str)
 {
   int records = (int)strtol(records_str, NULL, 10);
   int bytes = (int)strtol(bytes_str, NULL, 10);
-  int file = open(file_name, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
-  for (int i = 0; i < records; i++)
-  {
-    char *rec = generate_random_string(bytes);
-    write(file, rec, bytes);
-    free(rec);
-  }
+  char *buffer = calloc(strlen(file_name) + 100, sizeof(char));
+  sprintf(buffer, "head -c %d /dev/random > %s", records * bytes,
+          file_name);
+  system(buffer);
+  free(buffer);
 }
 
 void exec_copy(char *file_1, char *file_2, char *records_str, char *bytes_str, char *option)
@@ -87,6 +66,107 @@ void exec_copy(char *file_1, char *file_2, char *records_str, char *bytes_str, c
   free(buffer);
 }
 
+void swap_lib(FILE *file, int bytes, int i, int j)
+{
+  char *first_record = calloc(bytes, sizeof(char));
+  char *second_record = calloc(bytes, sizeof(char));
+
+  fseek(file, i * bytes, 0);
+  fread(first_record, 1, bytes, file);
+  fseek(file, j * bytes, 0);
+  fread(second_record, 1, bytes, file);
+
+  fseek(file, i * bytes, 0);
+  fwrite(second_record, 1, bytes, file);
+  fseek(file, j * bytes, 0);
+  fwrite(first_record, 1, bytes, file);
+
+  free(first_record);
+  free(second_record);
+}
+
+int partition_lib(FILE *file, int bytes, int low, int high)
+{
+  int pivot = high;
+  char *pivot_str = NULL;
+
+  int i = (low - 1);
+
+  for (int j = low; j <= high - 1; j++)
+  {
+    if (pivot_str == NULL)
+    {
+      pivot_str = calloc(bytes, sizeof(char));
+      fseek(file, pivot * bytes, 0);
+      fread(pivot_str, 1, bytes, file);
+    }
+
+    char *current = calloc(bytes, sizeof(char));
+    fseek(file, j * bytes, 0);
+    fread(current, 1, bytes, file);
+
+    if (strcmp(current, pivot_str) < 0)
+    {
+      free(pivot_str);
+      pivot_str = NULL;
+
+      free(current);
+      current = NULL;
+
+      i++;
+      swap_lib(file, bytes, i, j);
+    }
+
+    if (pivot_str != NULL)
+    {
+      free(pivot_str);
+      pivot_str = NULL;
+    }
+
+    if (current != NULL)
+    {
+      free(current);
+      current = NULL;
+    }
+  }
+  swap_lib(file, bytes, i + 1, high);
+  return i + 1;
+}
+
+void quicksort_lib(FILE *file, int bytes, int low, int high)
+{
+  if (low < high)
+  {
+    int pivot = partition_lib(file, bytes, low, high);
+
+    quicksort_lib(file, bytes, low, pivot - 1);
+    quicksort_lib(file, bytes, pivot + 1, high);
+  }
+}
+
+void sort_files(char *file_name, char *records_str, char *bytes_str, char *option)
+{
+  int records = (int)strtol(records_str, NULL, 10);
+  int bytes = (int)strtol(bytes_str, NULL, 10);
+
+  if (strcmp(option, "lib") == 0)
+  {
+    FILE *file = fopen(file_name, "rwb+");
+    quicksort_lib(file, bytes, 0, records - 1);
+    fclose(file);
+  }
+  else if (strcmp(option, "sys") == 0)
+  {
+    int file = open(file_name, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    quicksort_sys(file, bytes, 0, records - 1);
+    close(file);
+  }
+  else
+  {
+    printf("Wrong argument type. Expected type: sys | lib");
+  }
+}
+
 double calculate_time(clock_t start, clock_t end)
 {
   return (double)(end - start) / (double)sysconf(_SC_CLK_TCK);
@@ -124,10 +204,17 @@ int main(int args_num, char *args[])
       generate_files(args[i + 1], args[i + 2], args[i + 3]);
       i += 4;
     }
+    else if (strcmp(command, "sort") == 0)
+    {
+      sort_files(args[i + 1], args[i + 2], args[i + 3], args[i + 3]);
+      i += 5;
+    }
     else
     {
       i++;
     }
+    times(tms_time[1]);
+
     printf("[USER_TIME] Executing action %s took %fs\n", command, calculate_time(tms_time[0]->tms_utime, tms_time[1]->tms_utime));
     printf("[SYSTEM_TIME] Executing action %s took %fs\n", command, calculate_time(tms_time[0]->tms_stime, tms_time[1]->tms_stime));
   }
