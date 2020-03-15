@@ -31,7 +31,7 @@ char *get_file_type(int st_mode)
     return "fifo";
   if (S_ISLNK(st_mode) != 0)
     return "slink";
-  // if (S_ISSOCK(st_mode) != 0)
+  // if (S_ISSOCK(st_mode) != 0) on linux it can't be seen? throws compilation error
   //   return "sock";
   if (S_ISREG(st_mode) != 0)
     return "file";
@@ -51,22 +51,43 @@ void print_info(const char *path, const struct stat *file_stat)
   printf("\n");
 }
 
+// this functions checks if we should show this file info
 void filter_and_print(const char *path, const struct stat *file_stat, char *option, char *option_arg)
 {
-  time_t t = time(NULL);
-  struct tm curr_time = *localtime(&t);
+  time_t curr_time = time(NULL);
+  time_t file_time;
   if (strcmp(option, "-mtime") == 0)
   {
+    file_time = file_stat->st_mtime;
   }
   else if (strcmp(option, "-atime") == 0)
   {
+    file_time = file_stat->st_atime;
   }
   else
   {
-    printf("Error - invalid option");
+    printf("Error - invalid option\n");
     return;
   }
-  print_info(path, file_stat);
+  int difference = (int)(difftime(curr_time, file_time) / 86400);
+  int flag = 0;
+  int days = abs((int)strtol(option_arg, NULL, 10));
+  if (option_arg[0] == '+')
+  {
+    flag = (difference > days);
+  }
+  else if (option_arg[0] == '-')
+  {
+    flag = (difference < days);
+  }
+  else
+  {
+    flag = (difference == days);
+  }
+  if (flag)
+  {
+    print_info(path, file_stat);
+  }
 }
 
 void exec_find(char *path, char *option, char *option_arg, int depth)
@@ -79,20 +100,20 @@ void exec_find(char *path, char *option, char *option_arg, int depth)
   DIR *dir = opendir(path);
   if (dir == NULL)
     return;
-
+  // get files in directory
   struct dirent *rdir = readdir(dir);
   struct stat file_stat;
 
   char new_path[PATH_MAX];
-
+  // look throught all files in the directory
   while (rdir != NULL)
   {
     strcpy(new_path, path);
     strcat(new_path, "/");
     strcat(new_path, rdir->d_name);
-
+    // get file stats
     lstat(new_path, &file_stat);
-
+    // this are curr dir and upper dir, it always shows and we need to ignore it
     if (strcmp(rdir->d_name, ".") == 0 || strcmp(rdir->d_name, "..") == 0)
     {
       rdir = readdir(dir);
@@ -101,12 +122,12 @@ void exec_find(char *path, char *option, char *option_arg, int depth)
     else
     {
       if (S_ISREG(file_stat.st_mode))
-      {
+      { // we show the file info
         filter_and_print(new_path, &file_stat, option, option_arg);
       }
 
       if (S_ISDIR(file_stat.st_mode))
-      {
+      { // we show the dir and go inside it
         filter_and_print(new_path, &file_stat, option, option_arg);
         exec_find(new_path, option, option_arg, depth - 1);
       }
@@ -139,6 +160,7 @@ int main(int args_num, char *args[])
     printf("Couldn't open the directory\n");
     return 1;
   }
+  // parsing arguments comes next
   char *option;
   char *option_arg;
   int depth;
