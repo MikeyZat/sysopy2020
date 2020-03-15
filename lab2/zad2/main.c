@@ -40,7 +40,6 @@ char *get_file_type(int st_mode)
 
 void print_info(const char *path, const struct stat *file_stat)
 {
-  printf(" %s \t", path);
   printf(" %ld \t", file_stat->st_nlink);
   printf(" %s \t", get_file_type(file_stat->st_mode));
   printf(" %ld\t", file_stat->st_size);
@@ -48,6 +47,7 @@ void print_info(const char *path, const struct stat *file_stat)
   printf(" %s\t", buffer);
   strftime(buffer, PATH_MAX, format, localtime(&file_stat->st_mtime));
   printf(" %s\t", buffer);
+  printf(" %s \t", path);
   printf("\n");
 }
 
