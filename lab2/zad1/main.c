@@ -252,9 +252,6 @@ double calculate_time(clock_t start, clock_t end)
 int main(int args_num, char *args[])
 {
 
-  // random generator init
-  srand((unsigned int)time(NULL));
-
   // TIMERS
   struct tms **tms_time = malloc(2 * sizeof(struct tms *));
   for (int j = 0; j < 2; j++)
