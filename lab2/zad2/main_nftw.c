@@ -1,5 +1,5 @@
 // @author: Mikolaj Zatorski, 2020
-
+#define _XOPEN_SOURCE 500
 #include <time.h>
 #include <dirent.h>
 #include <stdlib.h>
@@ -18,6 +18,9 @@
 
 const char format[] = "%Y-%m-%d %H:%M:%S";
 char buffer[PATH_MAX];
+char *option;
+char *option_arg;
+int depth;
 
 char *get_file_type(int st_mode)
 {
@@ -52,8 +55,10 @@ void print_info(const char *path, const struct stat *file_stat)
 }
 
 // this functions checks if we should show this file info
-void filter_and_print(const char *path, const struct stat *file_stat, char *option, char *option_arg)
+static int filter_and_print(const char *path, const struct stat *file_stat, int typeflag, struct FTW *ftwbuf)
 {
+  if (depth >= 0 && ftwbuf->level > depth)
+    return 0;
   time_t curr_time = time(NULL);
   time_t file_time;
   if (strcmp(option, "-mtime") == 0)
@@ -67,7 +72,7 @@ void filter_and_print(const char *path, const struct stat *file_stat, char *opti
   else
   {
     printf("Error - invalid option\n");
-    return;
+    return 0;
   }
   int difference = (int)(difftime(curr_time, file_time) / 86400);
   int flag = 0;
@@ -88,53 +93,7 @@ void filter_and_print(const char *path, const struct stat *file_stat, char *opti
   {
     print_info(path, file_stat);
   }
-}
-
-void exec_find(char *path, char *option, char *option_arg, int depth)
-{
-  if (depth == 0)
-    return;
-  if (path == NULL)
-    return;
-
-  DIR *dir = opendir(path);
-  if (dir == NULL)
-    return;
-  // get files in directory
-  struct dirent *rdir = readdir(dir);
-  struct stat file_stat;
-
-  char new_path[PATH_MAX];
-  // look throught all files in the directory
-  while (rdir != NULL)
-  {
-    strcpy(new_path, path);
-    strcat(new_path, "/");
-    strcat(new_path, rdir->d_name);
-    // get file stats
-    lstat(new_path, &file_stat);
-    // this are curr dir and upper dir, it always shows and we need to ignore it
-    if (strcmp(rdir->d_name, ".") == 0 || strcmp(rdir->d_name, "..") == 0)
-    {
-      rdir = readdir(dir);
-      continue;
-    }
-    else
-    {
-      if (S_ISREG(file_stat.st_mode))
-      { // we show the file info
-        filter_and_print(new_path, &file_stat, option, option_arg);
-      }
-
-      if (S_ISDIR(file_stat.st_mode))
-      { // we show the dir and go inside it
-        filter_and_print(new_path, &file_stat, option, option_arg);
-        exec_find(new_path, option, option_arg, depth - 1);
-      }
-      rdir = readdir(dir);
-    }
-  }
-  closedir(dir);
+  return 0;
 }
 
 int main(int args_num, char *args[])
@@ -161,9 +120,6 @@ int main(int args_num, char *args[])
     return 1;
   }
   // parsing arguments comes next
-  char *option;
-  char *option_arg;
-  int depth;
   if (args_num == 4)
   {
     option = args[2];
@@ -186,10 +142,7 @@ int main(int args_num, char *args[])
     }
   }
   // main logic
-  struct stat file_stat;
-  lstat(path, &file_stat);
-  filter_and_print(path, &file_stat, option, option_arg);
-  exec_find(path, option, option_arg, depth);
+  nftw(path, filter_and_print, 10, FTW_PHYS);
 
   closedir(dir);
   return 0;
