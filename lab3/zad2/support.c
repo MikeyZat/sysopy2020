@@ -147,6 +147,12 @@ void test()
     }
   }
   printf("Correct result of multypling the matrixes");
+
+  for (int i = 0; i < a.rows; i++) // free result matrix
+  {
+    free(result[i]);
+  }
+  free(result);
 }
 
 int main(int argc, char *argv[])

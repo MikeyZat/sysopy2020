@@ -4,10 +4,12 @@ clean:
 	rm -f *.txt lista macierz support
 	rm -r .tmp
 
-macierz:
+compile_macierz:
+	rm -f macierz
 	$(CC) macierz.c -o macierz
 
-support:
+compile_support:
+	rm -f support
 	$(CC) support.c -o support
 
 run:
@@ -21,8 +23,8 @@ test:
 
 
 zad_2:
-	make macierz
-	make support
+	make compile_macierz
+	make compile_support
 	make create_list
 	make run
 	make test

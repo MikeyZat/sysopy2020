@@ -123,27 +123,53 @@ int get_task(int tasks_count)
   return task_index;
 }
 
-void multiply_column(matrix *a, matrix *b, int col_index)
+void multiply_column(matrix *a, matrix *b, int col_index, int is_one_file)
 {
-  char *filename = calloc(20, sizeof(char));
-  sprintf(filename, ".tmp/part%04d", col_index);
-  FILE *part_file = fopen(filename, "w+");
-
-  for (int y = 0; y < a->rows; y++)
+  if (!is_one_file)
   {
-    int result = 0;
+    char *filename = calloc(20, sizeof(char));
+    sprintf(filename, ".tmp/part%04d", col_index);
+    FILE *part_file = fopen(filename, "w+");
 
-    for (int x = 0; x < a->cols; x++)
+    for (int y = 0; y < a->rows; y++)
     {
-      result += a->values[y][x] * b->values[x][col_index];
-    }
+      int result = 0;
 
-    fprintf(part_file, "%d \n", result);
+      for (int x = 0; x < a->cols; x++)
+      {
+        result += a->values[y][x] * b->values[x][col_index];
+      }
+
+      fprintf(part_file, "%d \n", result);
+    }
+    fclose(part_file);
   }
-  fclose(part_file);
+  else
+  {
+    FILE *result_file = fopen("c.txt", "a");
+    int fd = fileno(result_file);
+    flock(fd, LOCK_EX);
+    for (int y = 0; y < a->rows; y++)
+    {
+      int result = 0;
+
+      for (int x = 0; x < a->cols; x++)
+      {
+        result += a->values[y][x] * b->values[x][col_index];
+      }
+
+      fprintf(result_file, "%d \n", result);
+    }
+    fclose(result_file);
+    flock(fd, LOCK_UN);
+  }
 }
 
-int worker_callback(matrix *a, matrix *b)
+void reorganize_file(int rows, int cols)
+{
+}
+
+int worker_callback(matrix *a, matrix *b, int is_one_file)
 {
   int multiplies_count = 0;
   while (1)
@@ -154,7 +180,7 @@ int worker_callback(matrix *a, matrix *b)
       break;
     }
 
-    multiply_column(a, b, col_index);
+    multiply_column(a, b, col_index, is_one_file);
     multiplies_count++;
   }
 
@@ -189,22 +215,24 @@ int main(int argc, char *argv[])
 
   matrix a = load_matrix(a_filename);
   matrix b = load_matrix(b_filename);
-
+  int c_rows = a.rows;
+  int c_cols = b.cols;
+  if (isOneFile)
+  {
+    system("rm -f c.txt");
+    system("touch c.txt");
+  }
   FILE *tasks_file;
 
-  if (!isOneFile)
-  {
-    system("rm -rf .tmp");
-    system("mkdir -p .tmp");
-
-    tasks_file = fopen(".tmp/tasks", "w+");
-    char *encoded_tasks = calloc(b.cols + 1, sizeof(char));
-    sprintf(encoded_tasks, "%0*d", b.cols, 0);
-    fwrite(encoded_tasks, 1, b.cols, tasks_file);
-    fflush(tasks_file);
-    free(encoded_tasks);
-    fclose(tasks_file);
-  }
+  system("rm -rf .tmp");
+  system("mkdir -p .tmp");
+  tasks_file = fopen(".tmp/tasks", "w+");
+  char *encoded_tasks = calloc(c_cols + 1, sizeof(char));
+  sprintf(encoded_tasks, "%0*d", c_cols, 0);
+  fwrite(encoded_tasks, 1, b.cols, tasks_file);
+  fflush(tasks_file);
+  free(encoded_tasks);
+  fclose(tasks_file);
 
   pid_t *workers = calloc(workers_count, sizeof(int));
   for (int i = 0; i < workers_count; i++)
@@ -212,7 +240,7 @@ int main(int argc, char *argv[])
     pid_t spawned_worker = fork();
     if (spawned_worker == 0)
     {
-      return worker_callback(&a, &b);
+      return worker_callback(&a, &b, isOneFile);
     }
     else
     {
@@ -230,12 +258,16 @@ int main(int argc, char *argv[])
   free(workers);
   free_matrix(&a);
   free_matrix(&b);
+  fclose(tasks_file);
+  char buffer[256];
   if (!isOneFile)
   {
-    fclose(tasks_file);
-    char buffer[256];
     sprintf(buffer, "paste .tmp/part* > %s", c_filename);
     system(buffer);
+  }
+  else
+  {
+    reorganize_file(c_rows, c_cols);
   }
 
   return 0;
