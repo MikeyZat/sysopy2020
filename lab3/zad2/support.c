@@ -134,6 +134,7 @@ void test()
       result[c][d] = sum;
     }
   }
+  int error = 0;
   for (int i = 0; i < a.rows; i++) // init result matrix
   {
     for (int j = 0; j < b.cols; j++)
@@ -143,11 +144,14 @@ void test()
         printf("Incorrect result of multiplying matrixes\n\
          %d != %d at index %d %d\n",
                result[i][j], third[i][j], i, j);
+        error = 1;
       }
     }
   }
-  printf("Correct result of multypling the matrixes");
-
+  if (!error)
+  {
+    printf("Correct result of multypling the matrixes");
+  }
   for (int i = 0; i < a.rows; i++) // free result matrix
   {
     free(result[i]);

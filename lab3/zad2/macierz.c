@@ -158,7 +158,7 @@ void multiply_column(matrix *a, matrix *b, int col_index, int is_one_file)
         result += a->values[y][x] * b->values[x][col_index];
       }
 
-      fprintf(result_file, "%d \n", result);
+      fprintf(result_file, "%d ", result);
     }
     fclose(result_file);
     flock(fd, LOCK_UN);
@@ -167,6 +167,38 @@ void multiply_column(matrix *a, matrix *b, int col_index, int is_one_file)
 
 void reorganize_file(int rows, int cols)
 {
+  // read matrix in 1 row
+  FILE *result_file = fopen("c.txt", "r");
+  int fd = fileno(result_file);
+  flock(fd, LOCK_EX);
+  char input_line[10000];
+  fgets(input_line, 10000, result_file);
+  char **lines = calloc(rows * cols, sizeof(char *));
+  fclose(result_file);
+  flock(fd, LOCK_UN);
+  // write matrix in separate columns and rows
+  result_file = fopen("c.txt", "w");
+  fd = fileno(result_file);
+  flock(fd, LOCK_EX);
+  lines[0] = calloc(MAX_LINE_LENGTH, sizeof(char));
+  strcpy(lines[0], strtok(input_line, " "));
+  for (int i = 1; i < rows * cols; i++)
+  {
+    lines[i] = calloc(MAX_LINE_LENGTH, sizeof(char));
+    strcpy(lines[i], strtok(NULL, " "));
+  }
+
+  for (int i = 0; i < rows; i++)
+  {
+    for (int j = i; j < rows * cols; j += rows)
+    {
+      fprintf(result_file, "%s\t", lines[j]);
+    }
+    fprintf(result_file, "\n");
+  }
+
+  fclose(result_file);
+  flock(fd, LOCK_UN);
 }
 
 int worker_callback(matrix *a, matrix *b, int is_one_file)
