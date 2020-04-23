@@ -10,7 +10,7 @@ char FIFO_NAME[] = "MULTIPLE_FIFO";
 
 int main(int argc, char **argv)
 {
-  if (mkfifo(FIFO_NAME, 0644) != 0)
+  if (mkfifo(FIFO_NAME, 0666) != 0)
   {
     printf("Can not create fifo");
     exit(1);
