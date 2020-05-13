@@ -15,9 +15,9 @@ int measure_time(struct timespec *start)
 {
   struct timespec stop;
   clock_gettime(CLOCK_MONOTONIC, &stop);
-  int retval = (stop.tv_sec - start->tv_sec) * 1000000;
-  retval += (stop.tv_nsec - start->tv_nsec) / 1000.0;
-  return retval;
+  int timestamp = (stop.tv_sec - start->tv_sec) * 1000000;
+  timestamp += (stop.tv_nsec - start->tv_nsec) / 1000.0;
+  return timestamp;
 }
 
 void skip_trash(FILE *img, char *buffer)
